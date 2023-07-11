@@ -1,68 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <title>Vite App</title>
-  </head>
-  <body>
-    <div id="app"></div>
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <title>Vite App</title>
+</head>
+
+<body>
+  <div id="app"></div>
+  <div>
+    <h1>Real Time BTC/USD Price</h1>
+    <p id="price"></p>
     <div>
-      <h1>Real Time BTC/USD Price</h1>
-      <p id="price"></p>
-      <div>
-        <h2>Price History</h2>
-        <div id="chart"></div>
-        <canvas id="myChart" width="400" height="400"></canvas>
+      <h2>Price History</h2>
+      <div class="chart-container" style="position: relative; height:40vh; width:80vw">
+        <canvas id="myChart"></canvas>
       </div>
+
     </div>
-    <!-- script for getting real time BTC/USD price -->
-    <script>
-      const values = [];
-      const socket = new WebSocket('wss://ws-feed.pro.coinbase.com');
-      socket.addEventListener('open', function (event) {
-        socket.send(JSON.stringify({
-          "type": "subscribe",
-          "channels": [{ "name": "ticker", "product_ids": ["BTC-USD"] }]
-        }));
-      });
-      socket.addEventListener('message', function (event) {
-        const data = JSON.parse(event.data);
-        if (data.type === 'ticker') {
-          // add 
-          values.push(data.price);
-          // render canvas chart
-          const ctx = document.getElementById('myChart').getContext('2d');
-          const myChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: values,
-              datasets: [{
-                label: 'BTC/USD',
-                data: values,
-                backgroundColor: [
-                  'rgba(255, 99, 132, 0.2)'
-                ],
-                borderColor: [
-                  'rgba(255, 99, 132, 1)'
-                ],
-                borderWidth: 1
-              }]
-            },
-            options: {
-              scales: {
-                yAxes: [{
-                  ticks: {
-                    beginAtZero: false
-                  }
-                }]
-              }
-            }
-          });
+  </div>
+  <!-- script for getting real time BTC/USD price -->
+  <script>
+    const values = [];
+    const socket = new WebSocket('wss://ws-feed.pro.coinbase.com');
+    socket.addEventListener('open', function (event) {
+      socket.send(JSON.stringify({
+        "type": "subscribe",
+        "channels": [{ "name": "ticker", "product_ids": ["BTC-USD"] }]
+      }));
+    });
+    socket.addEventListener('message', function (event) {
+      const data = JSON.parse(event.data);
+      if (data.type === 'ticker') {
+        // add 
+        values.push({
+          x: `${new Date().getHours()}:${new Date().getMinutes()}:${new Date().getSeconds()}`
+          , y: data.price
+        });
+
+        // render canvas chart
+        const ctx = document.getElementById('myChart').getContext('2d');
+        // destroy previous chart
+        let existingChart = Chart.getChart('myChart');
+        if (existingChart) {
+          existingChart.destroy();
         }
-      });
-    </script>
-  </body>
+        const myChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: values.map(v => v.x),
+            datasets: [{
+              label: 'BTC/USD',
+              data: values.map(v => v.y),
+              backgroundColor: [
+                'rgba(255, 99, 132, 0.2)'
+              ],
+              borderColor: [
+                'rgba(255, 99, 132, 1)'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: {
+              yAxes: [{
+                ticks: {
+                  beginAtZero: false
+                }
+              }]
+            }
+          }
+        });
+      }
+    });
+    // resize canvas so it fits the screen
+    const canvas = document.getElementById('myChart');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+  </script>
+</body>
+
 </html>
