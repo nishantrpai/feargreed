@@ -40,9 +40,12 @@
           x: `${new Date().getHours()}:${new Date().getMinutes()}:${new Date().getSeconds()}`
           , y: data.price
         });
-
-
-        function renderChart() {
+      }
+      renderChart();
+    });
+    // resize canvas so it fits the screen
+    const canvas = document.getElementById('myChart');
+    function renderChart() {
           const ctx = document.getElementById('myChart').getContext('2d');
           // destroy previous chart
           let existingChart = Chart.getChart('myChart');
@@ -89,13 +92,6 @@
             renderChart();
           }, 200000);
         }
-        // render canvas chart
-        renderChart();
-
-      }
-    });
-    // resize canvas so it fits the screen
-    const canvas = document.getElementById('myChart');
   </script>
 </body>
 
