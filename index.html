@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Vite App</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div>
+      <h1>Real Time BTC/USD Price</h1>
+      <p id="price"></p>
+      <div>
+        <h2>Price History</h2>
+        <div id="chart"></div>
+        <canvas id="myChart" width="400" height="400"></canvas>
+      </div>
+    </div>
+    <!-- script for getting real time BTC/USD price -->
+    <script>
+      const values = [];
+      const socket = new WebSocket('wss://ws-feed.pro.coinbase.com');
+      socket.addEventListener('open', function (event) {
+        socket.send(JSON.stringify({
+          "type": "subscribe",
+          "channels": [{ "name": "ticker", "product_ids": ["BTC-USD"] }]
+        }));
+      });
+      socket.addEventListener('message', function (event) {
+        const data = JSON.parse(event.data);
+        if (data.type === 'ticker') {
+          // add 
+          values.push(data.price);
+          // render canvas chart
+          const ctx = document.getElementById('myChart').getContext('2d');
+          const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: values,
+              datasets: [{
+                label: 'BTC/USD',
+                data: values,
+                backgroundColor: [
+                  'rgba(255, 99, 132, 0.2)'
+                ],
+                borderColor: [
+                  'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+              }]
+            },
+            options: {
+              scales: {
+                yAxes: [{
+                  ticks: {
+                    beginAtZero: false
+                  }
+                }]
+              }
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
