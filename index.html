@@ -16,7 +16,7 @@
     <p id="price"></p>
     <div>
       <h2>Price History</h2>
-      <div class="chart-container" style="position: relative; height:40vh; width:80vw">
+      <div class="chart-container" style="position: relative; height:50vh; width:80vw">
         <canvas id="myChart"></canvas>
       </div>
 
@@ -41,45 +41,61 @@
           , y: data.price
         });
 
-        // render canvas chart
-        const ctx = document.getElementById('myChart').getContext('2d');
-        // destroy previous chart
-        let existingChart = Chart.getChart('myChart');
-        if (existingChart) {
-          existingChart.destroy();
-        }
-        const myChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: values.map(v => v.x),
-            datasets: [{
-              label: 'BTC/USD',
-              data: values.map(v => v.y),
-              backgroundColor: [
-                'rgba(255, 99, 132, 0.2)'
-              ],
-              borderColor: [
-                'rgba(255, 99, 132, 1)'
-              ],
-              borderWidth: 1
-            }]
-          },
-          options: {
-            scales: {
-              yAxes: [{
-                ticks: {
-                  beginAtZero: false
-                }
-              }]
-            }
+
+        function renderChart() {
+          const ctx = document.getElementById('myChart').getContext('2d');
+          // destroy previous chart
+          let existingChart = Chart.getChart('myChart');
+          if (existingChart) {
+            existingChart.destroy();
           }
-        });
+          const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: values.map(v => v.x),
+              datasets: [{
+                label: 'BTC/USD',
+                data: values.map(v => v.y),
+                backgroundColor: [
+                  'rgba(255, 99, 132, 0.2)'
+                ],
+                borderColor: [
+                  'rgba(255, 99, 132, 1)'
+                ],
+                borderWidth: 1
+              }]
+            },
+            options: {
+              animation: false,
+              responsive: true,
+              maintainAspectRatio: true,
+              elements: {
+                line: {
+                  tension: 0 // disables bezier curves
+                },
+                point: {
+                  radius: 0 // hide points
+                }
+              }
+            }
+          });
+          // disable animation on render
+          myChart.options.animation = false;
+          // sleep for 5 seconds
+          setTimeout(() => {
+            // remove first element from array
+            values.shift();
+            // render chart again
+            renderChart();
+          }, 200000);
+        }
+        // render canvas chart
+        renderChart();
+
       }
     });
     // resize canvas so it fits the screen
     const canvas = document.getElementById('myChart');
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
   </script>
 </body>
 
