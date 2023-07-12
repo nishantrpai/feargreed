@@ -16,16 +16,21 @@
     <p id="price"></p>
     <div>
       <h2>Price History</h2>
-      <div class="chart-container" style="position: relative; height:50vh; width:80vw">
+      <div class="chart-container" style="position: relative; height:80vh; width:80vw">
         <canvas id="myChart"></canvas>
       </div>
-
     </div>
   </div>
   <!-- script for getting real time BTC/USD price -->
   <script>
     const values = [];
     const socket = new WebSocket('wss://ws-feed.pro.coinbase.com');
+    const canvas = document.getElementById('myChart');
+    const ctx = canvas.getContext('2d');
+    function getDate() {
+      const date = new Date();
+      return `${date.getHours() > 10 ? date.getHours() : '0' + date.getHours()}:${date.getMinutes() > 10 ? date.getMinutes() : '0' + date.getMinutes()}:${date.getSeconds() > 10 ? date.getSeconds() : '0' + date.getSeconds()}`;
+    }
     socket.addEventListener('open', function (event) {
       socket.send(JSON.stringify({
         "type": "subscribe",
@@ -35,57 +40,66 @@
     socket.addEventListener('message', function (event) {
       const data = JSON.parse(event.data);
       if (data.type === 'ticker') {
-        // add 
-        values.push({
-          x: `${new Date().getHours()}:${new Date().getMinutes()}:${new Date().getSeconds()}`
-          , y: data.price
-        });
-      }
-      renderChart();
-    });
-    // resize canvas so it fits the screen
-    const canvas = document.getElementById('myChart');
-    function renderChart() {
-          const ctx = document.getElementById('myChart').getContext('2d');
-          // destroy previous chart
-          let existingChart = Chart.getChart('myChart');
-          if (existingChart) {
-            existingChart.destroy();
-          }
-          const myChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: values.map(v => v.x),
-              datasets: [{
-                label: 'BTC/USD',
-                data: values.map(v => v.y),
-                backgroundColor: [
-                  'rgba(255, 99, 132, 0.2)'
-                ],
-                borderColor: [
-                  'rgba(255, 99, 132, 1)'
-                ],
-                borderWidth: 1
-              }]
-            },
-            options: {
-              animation: false,
-              responsive: true,
-              maintainAspectRatio: false,
-              elements: {
-                line: {
-                  tension: 0 // disables bezier curves
-                },
-                point: {
-                  radius: 0 // hide points
-                }
-              }
-            }
+        let price = parseFloat(data.price);
+        const high24h = parseFloat(data.high_24h);
+        const low24h = parseFloat(data.low_24h);
+        const candleHeight = price - low24h;
+        if (!isNaN(price)) {
+          values.push({
+            x: getDate(),
+            y: price - low24h,
+            price,
+            height: candleHeight,
+            normalized: false
           });
-          // disable animation on render
-          myChart.options.animation = false;
-          // sleep for 5 seconds
+          normalizeValues();
+          renderChart();
         }
+      }
+    });
+
+    function normalizeValues() {
+      let max = Math.max(...values.map(value => !value.normalized ? value.y : 0));
+      let min = Math.min(...values.map(value => !value.normalized ? value.y : 0));
+      values.forEach((value, index) => {
+        if (index > 0 && !value.normalized) {
+          value.y = (value.y - min) / (max - min);
+          value.normalized = true;
+        }
+      });
+    }
+
+    function renderChart() {
+      const labels = values.map(value => value.x);
+      const data = values.map(value => value.y);
+      const price = values.map(value => value.price);
+      const height = values.map(value => value.height);
+      let diff = 0;
+      // normalize height so that it fits in the canvas
+      const max = Math.max(...height);
+      const min = Math.min(...height);
+      height.forEach((value, index) => {
+        height[index] = (value - min) / (max - min) * 0.8;
+      });
+      
+      canvas.height = 1000;
+      canvas.width = 1000;
+      for (let i = 0; i < labels.length; i++) {
+        if (i > 1) {
+          ctx.beginPath();
+          // move to the diff of the previous candlestick bar
+          ctx.moveTo(i * 10, 1000 - diff * 1000);
+          // render candlestick bar for each value
+          ctx.rect(i * 10, 1000 - height[i] * 1000, 10, height[i] * 1000);
+          ctx.fillStyle = data[i] > data[i - 1] ? 'green' : 'red';
+          ctx.fill();
+          ctx.stroke();
+        } else {
+          diff = data[1] - data[0];
+        }
+      }
+    }
+
   </script>
 </body>
 
