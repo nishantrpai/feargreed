@@ -89,9 +89,9 @@
           ctx.beginPath();
           // move to the diff of the previous candlestick bar
           ctx.moveTo(i * 10, 1000 - diff * 1000);
-          // render candlestick bar for each value
-          ctx.rect(i * 10, 1000 - height[i] * 1000, 10, height[i] * 1000);
-          ctx.fillStyle = data[i] > data[i - 1] ? 'green' : 'red';
+          // render candlestick next to the previous one
+          ctx.rect(i * 10, 200 - height[i] * 200, 5, data[i] * 200);
+          ctx.fillStyle = height[i] > height[i - 1] ? 'green' : 'red';
           ctx.fill();
           ctx.stroke();
         } else {
