@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <link rel="icon" href="/favicon.ico">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- import test json -->
   <title>Vite App</title>
 </head>
 
@@ -17,89 +17,95 @@
     <div>
       <h2>Price History</h2>
       <div class="chart-container" style="position: relative; height:80vh; width:80vw">
-        <canvas id="myChart"></canvas>
+        <canvas id="myChart" width="500" height="500" style="border:1px solid"></canvas>
       </div>
     </div>
   </div>
-  <!-- script for getting real time BTC/USD price -->
+  <!-- script for getting candlestick data for BTC/USD 30m time frame -->
   <script>
-    const values = [];
-    const socket = new WebSocket('wss://ws-feed.pro.coinbase.com');
     const canvas = document.getElementById('myChart');
-    const ctx = canvas.getContext('2d');
-    function getDate() {
-      const date = new Date();
-      return `${date.getHours() > 10 ? date.getHours() : '0' + date.getHours()}:${date.getMinutes() > 10 ? date.getMinutes() : '0' + date.getMinutes()}:${date.getSeconds() > 10 ? date.getSeconds() : '0' + date.getSeconds()}`;
-    }
-    socket.addEventListener('open', function (event) {
-      socket.send(JSON.stringify({
-        "type": "subscribe",
-        "channels": [{ "name": "ticker", "product_ids": ["BTC-USD"] }]
-      }));
-    });
-    socket.addEventListener('message', function (event) {
-      const data = JSON.parse(event.data);
-      if (data.type === 'ticker') {
-        let price = parseFloat(data.price);
-        const high24h = parseFloat(data.high_24h);
-        const low24h = parseFloat(data.low_24h);
-        const candleHeight = price - low24h;
-        if (!isNaN(price)) {
-          values.push({
-            x: getDate(),
-            y: price - low24h,
-            price,
-            height: candleHeight,
-            normalized: false
+    // const socket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_30m');
+    // load test.json data
+    const candleStickData = [];
+    fetch('test.json')
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+        for (let i = 0; i < data.length; i++) {
+          const candle = data[i];
+          candleStickData.push({
+            t: candle.t,
+            o: candle.o,
+            h: parseFloat(candle.h),
+            l: parseFloat(candle.l),
+            c: candle.c
           });
-          normalizeValues();
-          renderChart();
+        }
+        normalizeData(candleStickData);
+        renderChart(candleStickData);
+      });
+    console.log(candleStickData);
+    // socket.onmessage = function (event) {
+    //   const message = JSON.parse(event.data);
+    //   const candle = message.k;
+    //   const price = candle.c;
+    //   candleStickData.push({
+    //     t: candle.t,
+    //     o: candle.o,
+    //     h: candle.h,
+    //     l: candle.l,
+    //     c: candle.c
+    //   });
+    //   console.log(candleStickData);
+    //   // normalizeData(candleStickData);
+    //   // renderChart(candleStickData);
+    // }
+    function render() {
+      ctx.drawImage(canvas, 0, 0);
+      requestAnimationFrame(render);
+    }
+    render();
+
+    function normalizeData(candleStickData) {
+      // normalize data so it doesn't go out of the canvas
+      let min = candleStickData[0].l;
+      let max = candleStickData[0].h;
+      for (let i = 0; i < candleStickData.length; i++) {
+        if (candleStickData[i].l < min) {
+          min = candleStickData[i].l;
+        }
+        if (candleStickData[i].h > max) {
+          max = candleStickData[i].h;
         }
       }
-    });
-
-    function normalizeValues() {
-      let max = Math.max(...values.map(value => !value.normalized ? value.y : 0));
-      let min = Math.min(...values.map(value => !value.normalized ? value.y : 0));
-      values.forEach((value, index) => {
-        if (index > 0 && !value.normalized) {
-          value.y = (value.y - min) / (max - min);
-          value.normalized = true;
-        }
-      });
-    }
-
-    function renderChart() {
-      const labels = values.map(value => value.x);
-      const data = values.map(value => value.y);
-      const price = values.map(value => value.price);
-      const height = values.map(value => value.height);
-      let diff = 0;
-      // normalize height so that it fits in the canvas
-      const max = Math.max(...height);
-      const min = Math.min(...height);
-      height.forEach((value, index) => {
-        height[index] = (value - min) / (max - min) * 0.8;
-      });
-      
-      canvas.height = 1000;
-      canvas.width = 1000;
-      for (let i = 0; i < labels.length; i++) {
-        if (i > 1) {
-          ctx.beginPath();
-          // move to the diff of the previous candlestick bar
-          ctx.moveTo(i * 10, 1000 - diff * 1000);
-          // render candlestick next to the previous one
-          ctx.rect(i * 10, 200 - height[i] * 200, 5, data[i] * 200);
-          ctx.fillStyle = height[i] > height[i - 1] ? 'green' : 'red';
-          ctx.fill();
-          ctx.stroke();
-        } else {
-          diff = data[1] - data[0];
-        }
+      for (let i = 0; i < candleStickData.length; i++) {
+        candleStickData[i].l = candleStickData[i].l - min;
+        candleStickData[i].h = candleStickData[i].h - min;
       }
     }
-
+    function renderChart(candleStickData) {
+      let startY = 0;
+      let startX = 0;
+      let prev = 0;
+      // move to center of canvas vertically and horizontally
+      const ctx = canvas.getContext('2d');
+      ctx.translate(0, canvas.height / 2);
+      for (let i = 0; i < candleStickData.length; i++) {
+        let diff = candleStickData[i].o - candleStickData[i].c;
+        let height = parseInt(diff * 2);
+        let width = 10;
+        ctx.beginPath();
+        ctx.fillStyle = height > prev ? 'green' : 'red';
+        console.log(startX, startY, width, height);
+        ctx.fillRect(startX, startY, width, height);
+        ctx.fill();
+        ctx.stroke();
+        ctx.closePath();
+        startY = height;
+        prev = height;
+        startX += canvas.width / candleStickData.length;
+      }
+    }
   </script>
 </body>
 
