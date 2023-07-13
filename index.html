@@ -37,28 +37,45 @@
   </div>
   <script>
     const canvas = document.getElementById('myChart');
+    const zoomFactor = 10;
+    // FEAR
+    // GREED
     let testData = [
       {
         x: 1, h: 2, y: 10
       }, {
-        x: 2, h: 1.5, y: 20
+        x: 2, h: 3, y: 20
       },
       {
-        x: 3, h: 3, y: 30
+        x: 3, h: 4, y: 30
       }, {
-        x: 4, h: 2, y: 40
+        x: 4, h: 5, y: 40
       },
       {
-        x: 5, h: 1, y: 50
+        x: 5, h: 6, y: 50
       },
       {
         x: 6, h: 2, y: 60
+      },
+      {
+        x: 7, h: 3, y: 70
+      },
+      {
+        x: 8, h: 10, y: 80
+      },
+      {
+        x: 9, h: 5, y: 10
+      },
+      {
+        x: 10, h: 6, y: 20
+      },
+      {
+        x: 11, h: 1, y: 30
       }
     ]
 
 
     optimizeCanvas();
-    refactorCoordinates(testData);
     renderGrid();
     renderChart(testData);
 
@@ -69,17 +86,6 @@
       canvas.height = height * window.devicePixelRatio * scaleFactor;
       canvas.style.width = `${width * scaleFactor}px`;
       canvas.style.height = `${height * scaleFactor}px`;
-    }
-    function refactorCoordinates(testData) {
-      // refactor for canvas coordinates
-      for (let i = 0; i < testData.length; i++) {
-        const { x, h, y } = testData[i];
-        testData[i] = {
-          x: x,
-          h: h,
-          y: - y
-        }
-      }
     }
 
     function renderGrid() {
@@ -106,25 +112,48 @@
       }
       ctx.closePath();
     }
+
+    function slopeNature(arr) {
+      // get slope of array
+      return arr[arr.length - 1].y - arr[0].y;      
+    }
+
     function renderChart(testData) {
       // plot points on grid
       const scaleFactor = 5;
       const ctx = canvas.getContext('2d');
-      let text = 'FEAR'
+      let text = '';
+      let charPos = 0;
+      
+      let cycle = 0;
       for (let i = 0; i < testData.length; i++) {
         let { x, h, y } = testData[i];
+        if(!text) {
+          // get next 6 letters
+          let nature = slopeNature(testData.slice(i, i + 6));
+          if (nature >= 0) {
+            text = 'GREED';
+          } else {
+            text = 'FEAR';
+          }
+        }
         y = parseInt(y);
-        console.log(canvas.width, canvas.height);
         // draw rectangle
         ctx.beginPath();
-        ctx.rect(x * 60, (-y + 1000), 50, - h * 20 * scaleFactor);
+        ctx.rect(x * 60, (-y + 1000), 50, - h * zoomFactor * scaleFactor);
         ctx.strokeStyle = 'red';
         ctx.stroke();
         ctx.fillStyle = 'transparent';
         ctx.fill();
         ctx.closePath();
         // draw text in rectangle
-        drawLetterA(text[i % text.length], x * 60, (-y + 1000 + (- h * 20 * scaleFactor)), h * 20 * scaleFactor);
+        drawLetterA(text[charPos%text.length], x * 60, (-y + 1000 + (- h * zoomFactor * scaleFactor)), h * zoomFactor * scaleFactor);
+        // if rendering last character, reset cycle
+        charPos++;
+        if( (text[i] == 'R' || text[i] == 'D') && charPos == text.length) {
+          text = '';
+          charPos = 0;
+        }
       }
     }
     function drawLetterA(letter, x, y, h) {
@@ -322,10 +351,8 @@
       let letterHeight = grid.length * gridSize;
       const startX = x
       const startY = y - (letterHeight / 60);
-      console.log(letterHeight, 'letterHeight', h, 'h', startY, 'startY');
       if (h > letterHeight) {
-        console.log(h, letterHeight, h - letterHeight, 'h - letterHeight');
-        for (let i = letterHeight / 10; i < parseInt(h) / 10; i++) {
+        for (let i = letterHeight / zoomFactor; i < parseInt(h) / zoomFactor; i++) {
           if (letter == 'E' || letter == 'R' || letter == 'G' || letter == 'D' || letter == 'A') {
             // add row before mid row before mid row
             if (h > letterHeight) {
