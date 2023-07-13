@@ -5,107 +5,359 @@
   <meta charset="UTF-8">
   <link rel="icon" href="/favicon.ico">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- import test json -->
+  <script src="https://cdn.jsdelivr.net/npm/luxon@1.26.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.0.1/dist/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
+  <script src="https://www.chartjs.org/chartjs-chart-financial/chartjs-chart-financial.js"></script>
   <title>Vite App</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #fff;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+  </style>
 </head>
 
 <body>
-  <div id="app"></div>
-  <div>
+  <div id="container">
     <h1>Real Time BTC/USD Price</h1>
-    <p id="price"></p>
-    <div>
-      <h2>Price History</h2>
-      <div class="chart-container" style="position: relative; height:80vh; width:80vw">
-        <canvas id="myChart" width="500" height="500" style="border:1px solid"></canvas>
-      </div>
-    </div>
+    <h2>Price History</h2>
+    <canvas id="myChart"></canvas>
   </div>
-  <!-- script for getting candlestick data for BTC/USD 30m time frame -->
+  </div>
   <script>
     const canvas = document.getElementById('myChart');
-    // const socket = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_30m');
-    // load test.json data
-    const candleStickData = [];
-    fetch('test.json')
-      .then(response => response.json())
-      .then(data => {
-        console.log(data);
-        for (let i = 0; i < data.length; i++) {
-          const candle = data[i];
-          candleStickData.push({
-            t: candle.t,
-            o: candle.o,
-            h: parseFloat(candle.h),
-            l: parseFloat(candle.l),
-            c: candle.c
-          });
-        }
-        normalizeData(candleStickData);
-        renderChart(candleStickData);
-      });
-    console.log(candleStickData);
-    // socket.onmessage = function (event) {
-    //   const message = JSON.parse(event.data);
-    //   const candle = message.k;
-    //   const price = candle.c;
-    //   candleStickData.push({
-    //     t: candle.t,
-    //     o: candle.o,
-    //     h: candle.h,
-    //     l: candle.l,
-    //     c: candle.c
-    //   });
-    //   console.log(candleStickData);
-    //   // normalizeData(candleStickData);
-    //   // renderChart(candleStickData);
-    // }
-    function render() {
-      ctx.drawImage(canvas, 0, 0);
-      requestAnimationFrame(render);
-    }
-    render();
+    let testData = [
+      {
+        x: 1, h: 2, y: 10
+      }, {
+        x: 2, h: 1.5, y: 20
+      },
+      {
+        x: 3, h: 3, y: 30
+      }, {
+        x: 4, h: 2, y: 40
+      },
+      {
+        x: 5, h: 1, y: 50
+      },
+      {
+        x: 6, h: 2, y: 60
+      }
+    ]
 
-    function normalizeData(candleStickData) {
-      // normalize data so it doesn't go out of the canvas
-      let min = candleStickData[0].l;
-      let max = candleStickData[0].h;
-      for (let i = 0; i < candleStickData.length; i++) {
-        if (candleStickData[i].l < min) {
-          min = candleStickData[i].l;
+
+    optimizeCanvas();
+    refactorCoordinates(testData);
+    renderGrid();
+    renderChart(testData);
+
+    function optimizeCanvas() {
+      const { width, height } = canvas.getBoundingClientRect();
+      const scaleFactor = 4;
+      canvas.width = width * window.devicePixelRatio * scaleFactor;
+      canvas.height = height * window.devicePixelRatio * scaleFactor;
+      canvas.style.width = `${width * scaleFactor}px`;
+      canvas.style.height = `${height * scaleFactor}px`;
+    }
+    function refactorCoordinates(testData) {
+      // refactor for canvas coordinates
+      for (let i = 0; i < testData.length; i++) {
+        const { x, h, y } = testData[i];
+        testData[i] = {
+          x: x,
+          h: h,
+          y: - y
         }
-        if (candleStickData[i].h > max) {
-          max = candleStickData[i].h;
-        }
-      }
-      for (let i = 0; i < candleStickData.length; i++) {
-        candleStickData[i].l = candleStickData[i].l - min;
-        candleStickData[i].h = candleStickData[i].h - min;
       }
     }
-    function renderChart(candleStickData) {
-      let startY = 0;
-      let startX = 0;
-      let prev = 0;
-      // move to center of canvas vertically and horizontally
+
+    function renderGrid() {
+      for (let i = 0; i < canvas.width; i += 10) {
+        for (let j = 0; j < canvas.height; j += 10) {
+          const ctx = canvas.getContext('2d');
+          ctx.beginPath();
+          ctx.rect(i, j, 10, 10);
+          ctx.strokeStyle = '#333';
+          ctx.stroke();
+        }
+      }
+    }
+    function drawCharacter(x, y, h) {
+      // highlight every rectangle in grid
       const ctx = canvas.getContext('2d');
-      ctx.translate(0, canvas.height / 2);
-      for (let i = 0; i < candleStickData.length; i++) {
-        let diff = candleStickData[i].o - candleStickData[i].c;
-        let height = parseInt(diff * 2);
-        let width = 10;
+      ctx.beginPath();
+      for (let i = x * 60; i < x * 60 + 40; i += 10) {
+        for (let j = (-y + 1000); j > (-y + 1000) - h * 0.5 * 5; j -= 10) {
+          ctx.rect(i, j, 10, 10);
+          ctx.fillStyle = 'red';
+          ctx.fill();
+        }
+      }
+      ctx.closePath();
+    }
+    function renderChart(testData) {
+      // plot points on grid
+      const scaleFactor = 5;
+      const ctx = canvas.getContext('2d');
+      let text = 'FEAR'
+      for (let i = 0; i < testData.length; i++) {
+        let { x, h, y } = testData[i];
+        y = parseInt(y);
+        console.log(canvas.width, canvas.height);
+        // draw rectangle
         ctx.beginPath();
-        ctx.fillStyle = height > prev ? 'green' : 'red';
-        console.log(startX, startY, width, height);
-        ctx.fillRect(startX, startY, width, height);
-        ctx.fill();
+        ctx.rect(x * 60, (-y + 1000), 50, - h * 20 * scaleFactor);
+        ctx.strokeStyle = 'red';
         ctx.stroke();
+        ctx.fillStyle = 'transparent';
+        ctx.fill();
         ctx.closePath();
-        startY = height;
-        prev = height;
-        startX += canvas.width / candleStickData.length;
+        // draw text in rectangle
+        drawLetterA(text[i % text.length], x * 60, (-y + 1000 + (- h * 20 * scaleFactor)), h * 20 * scaleFactor);
       }
     }
+    function drawLetterA(letter, x, y, h) {
+      const canvas = document.getElementById('myChart');
+      const ctx = canvas.getContext('2d');
+
+      const letterGrids = {
+        A: [
+          [0, 1, 1, 1, 0],
+          [1, 0, 0, 0, 1],
+          [1, 1, 1, 1, 1],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1]
+        ],
+        B: [
+          [1, 1, 1, 1, 0],
+          [1, 0, 0, 0, 1],
+          [1, 1, 1, 1, 0],
+          [1, 0, 0, 0, 1],
+          [1, 1, 1, 1, 0]
+        ],
+        C: [
+          [0, 1, 1, 1, 1],
+          [1, 0, 0, 0, 0],
+          [1, 0, 0, 0, 0],
+          [1, 0, 0, 0, 0],
+          [0, 1, 1, 1, 1]
+        ],
+        D: [
+          [1, 1, 1, 1, 0],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [1, 1, 1, 1, 0]
+        ],
+        E: [
+          [1, 1, 1, 1, 1],
+          [1, 0, 0, 0, 0],
+          [1, 1, 1, 1, 0],
+          [1, 0, 0, 0, 0],
+          [1, 1, 1, 1, 1]
+        ],
+        F: [
+          [1, 1, 1, 1, 1],
+          [1, 0, 0, 0, 0],
+          [1, 1, 1, 1, 0],
+          [1, 0, 0, 0, 0],
+          [1, 0, 0, 0, 0]
+        ],
+        G: [
+          [0, 1, 1, 1, 1],
+          [1, 0, 0, 0, 0],
+          [1, 0, 1, 1, 1],
+          [1, 0, 0, 0, 1],
+          [0, 1, 1, 1, 1]
+        ],
+        H: [
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [1, 1, 1, 1, 1],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1]
+        ],
+        I: [
+          [1, 1, 1, 1, 1],
+          [0, 1, 0, 0, 0],
+          [0, 1, 0, 0, 0],
+          [0, 1, 0, 0, 0],
+          [1, 1, 1, 1, 1]
+        ],
+        J: [
+          [0, 0, 1, 1, 1],
+          [0, 0, 0, 1, 0],
+          [0, 0, 0, 1, 0],
+          [1, 0, 0, 1, 0],
+          [0, 1, 1, 0, 0]
+        ],
+        K: [
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 1, 0],
+          [1, 1, 1, 0, 0],
+          [1, 0, 0, 1, 0],
+          [1, 0, 0, 0, 1]
+        ],
+        L: [
+          [1, 0, 0, 0, 0],
+          [1, 0, 0, 0, 0],
+          [1, 0, 0, 0, 0],
+          [1, 0, 0, 0, 0],
+          [1, 1, 1, 1, 1]
+        ],
+        M: [
+          [1, 0, 0, 0, 1],
+          [1, 1, 0, 1, 1],
+          [1, 0, 1, 0, 1],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1]
+        ],
+        N: [
+          [1, 0, 0, 0, 1],
+          [1, 1, 0, 0, 1],
+          [1, 0, 1, 0, 1],
+          [1, 0, 0, 1, 1],
+          [1, 0, 0, 0, 1]
+        ],
+        O: [
+          [0, 1, 1, 1, 0],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [0, 1, 1, 1, 0]
+        ],
+        P: [
+          [1, 1, 1, 1, 0],
+          [1, 0, 0, 0, 1],
+          [1, 1, 1, 1, 0],
+          [1, 0, 0, 0, 0],
+          [1, 0, 0, 0, 0]
+        ],
+        Q: [
+          [0, 1, 1, 1, 0],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [1, 0, 1, 1, 0],
+          [0, 1, 1, 1, 1]
+        ],
+        R: [
+          [1, 1, 1, 1, 0],
+          [1, 0, 0, 0, 1],
+          [1, 1, 1, 1, 0],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1]
+        ],
+        S: [
+          [0, 1, 1, 1, 1],
+          [1, 0, 0, 0, 0],
+          [0, 1, 1, 1, 0],
+          [0, 0, 0, 0, 1],
+          [1, 1, 1, 1, 0]
+        ],
+        T: [
+          [1, 1, 1, 1, 1],
+          [0, 1, 0, 0, 0],
+          [0, 1, 0, 0, 0],
+          [0, 1, 0, 0, 0],
+          [0, 1, 0, 0, 0]
+        ],
+        U: [
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [0, 1, 1, 1, 0]
+        ],
+        V: [
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [0, 1, 0, 1, 0],
+          [0, 0, 1, 0, 0]
+        ],
+        W: [
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [1, 0, 1, 0, 1],
+          [1, 1, 0, 1, 1],
+          [1, 0, 0, 0, 1]
+        ],
+        X: [
+          [1, 0, 0, 0, 1],
+          [0, 1, 0, 1, 0],
+          [0, 0, 1, 0, 0],
+          [0, 1, 0, 1, 0],
+          [1, 0, 0, 0, 1]
+        ],
+        Y: [
+          [1, 0, 0, 0, 1],
+          [1, 0, 0, 0, 1],
+          [0, 1, 0, 1, 0],
+          [0, 0, 1, 0, 0],
+          [0, 0, 1, 0, 0]
+        ],
+        Z: [
+          [1, 1, 1, 1, 1],
+          [0, 0, 0, 1, 0],
+          [0, 0, 1, 0, 0],
+          [0, 1, 0, 0, 0],
+          [1, 1, 1, 1, 1]
+        ]
+      };
+
+      const grid = letterGrids[letter];
+      const gridSize = 10;
+      const letterWidth = grid[0].length * gridSize;
+      let letterHeight = grid.length * gridSize;
+      const startX = x
+      const startY = y - (letterHeight / 60);
+      console.log(letterHeight, 'letterHeight', h, 'h', startY, 'startY');
+      if (h > letterHeight) {
+        console.log(h, letterHeight, h - letterHeight, 'h - letterHeight');
+        for (let i = letterHeight / 10; i < parseInt(h) / 10; i++) {
+          if (letter == 'E' || letter == 'R' || letter == 'G' || letter == 'D') {
+            // add row before mid row before mid row
+            if (h > letterHeight) {
+              grid.splice(Math.floor(grid.length / 2), 0, grid[1]);
+              letterHeight = grid.length * gridSize;
+            }
+            // add before last row
+            if (h > letterHeight) {
+              grid.splice(grid.length - 1, 0, grid[grid.length - 2]);
+              letterHeight = grid.length * gridSize;
+            }
+          }
+          else {
+            grid.push(grid[grid.length - 1]);
+          }
+        }
+      }
+
+      for (let i = 0; i < grid.length; i++) {
+        for (let j = 0; j < grid[i].length; j++) {
+          if (grid[i][j] === 1) {
+            const rectX = startX + j * gridSize;
+            const rectY = startY + i * gridSize;
+            ctx.fillStyle = 'white';
+            ctx.fillRect(rectX, rectY, gridSize, gridSize);
+          }
+        }
+      }
+    }
+
+
+
   </script>
 </body>
 
