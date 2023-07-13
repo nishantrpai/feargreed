@@ -147,7 +147,7 @@
         ctx.fill();
         ctx.closePath();
         // draw text in rectangle
-        drawLetterA(text[charPos%text.length], x * 60, (-y + 1000 + (- h * zoomFactor * scaleFactor)), h * zoomFactor * scaleFactor);
+        drawLetter(text[charPos%text.length], x * 60, (-y + 1000 + (- h * zoomFactor * scaleFactor)), h * zoomFactor * scaleFactor);
         // if rendering last character, reset cycle
         charPos++;
         if( (text[i] == 'R' || text[i] == 'D') && charPos == text.length) {
@@ -156,7 +156,7 @@
         }
       }
     }
-    function drawLetterA(letter, x, y, h) {
+    function drawLetter(letter, x, y, h) {
       const canvas = document.getElementById('myChart');
       const ctx = canvas.getContext('2d');
 
