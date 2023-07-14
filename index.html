@@ -127,20 +127,6 @@
       }
     }
 
-    function drawCharacter(x, y, h) {
-      // highlight every rectangle in grid
-      const ctx = canvas.getContext('2d');
-      ctx.beginPath();
-      for (let i = x * 60; i < x * 60 + 40; i += 10) {
-        for (let j = (-y + 1000); j > (-y + 1000) - h * 0.5 * 5; j -= 10) {
-          ctx.rect(i, j, 10, 10);
-          ctx.fillStyle = 'red';
-          ctx.fill();
-        }
-      }
-      ctx.closePath();
-    }
-
     function slopeNature(arr) {
       // get slope of array
       return arr[arr.length - 1].y - arr[0].y;
@@ -173,10 +159,8 @@
         // draw rectangle
         ctx.beginPath();
         ctx.rect(x * 60, (-y + 1000), 50, - h * zoomFactor * scaleFactor);
-        ctx.strokeStyle = 'red';
+        // make red for debugging
         ctx.stroke();
-        ctx.fillStyle = 'transparent';
-        ctx.fill();
         ctx.closePath();
         // draw text in rectangle
         console.log(text[charPos % text.length], x * 60, (-y + 1000), h * zoomFactor * scaleFactor);
