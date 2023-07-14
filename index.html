@@ -37,47 +37,76 @@
   </div>
   <script>
     const canvas = document.getElementById('myChart');
-    const zoomFactor = 10;
+    const zoomFactor = 2;
     // FEAR
     // GREED
-    let testData = [
-      {
-        x: 1, h: 2, y: 10
-      }, {
-        x: 2, h: 3, y: 20
-      },
-      {
-        x: 3, h: 4, y: 30
-      }, {
-        x: 4, h: 5, y: 40
-      },
-      {
-        x: 5, h: 6, y: 50
-      },
-      {
-        x: 6, h: 2, y: 60
-      },
-      {
-        x: 7, h: 3, y: 70
-      },
-      {
-        x: 8, h: 10, y: 80
-      },
-      {
-        x: 9, h: 5, y: 10
-      },
-      {
-        x: 10, h: 6, y: 20
-      },
-      {
-        x: 11, h: 1, y: 30
-      }
-    ]
+    let testData = []
 
-
+    fetchTickerData();
+    // mockTickerData();
     optimizeCanvas();
     renderGrid();
-    renderChart(testData);
+
+    function fetchTickerData() {
+      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000')
+        .then(response => response.json())
+        .then(data => {
+          for (let i = 0; i < data.length; i++) {
+            let candle = {
+              o: data[i][1],
+              c: data[i][4],
+              h: data[i][2],
+              l: data[i][3],
+              t: data[i][0]
+            }
+            testData.push(formatTickerData(candle, 0));
+          }
+          normalizeHeight(testData);
+          console.log(testData.length);
+          renderChart(testData);
+        });
+      setTimeout(() => {
+        fetchTickerData();
+      }, 1000);
+    }
+
+
+    function formatTickerData(candle, offset) {
+      let x = testData.length + offset;
+      let h = Math.abs((parseFloat(candle.c) - parseFloat(candle.o)) + 10);
+      let y = parseFloat(candle.h);
+      return { x, h, y, normalized: false };
+    }
+
+    function mockTickerData() {
+      let mockData = [];
+      fetch('test.json')
+        .then(response => response.json())
+        .then(data => {
+          console.log(data);
+          for (let i = 0; i < data.length; i++) {
+            testData.push(formatTickerData(data[i]));
+          }
+          // get first 6 data points
+          testData = testData.slice(0, 6);
+          normalizeHeight(testData);
+          console.log(testData);
+          // renderChart(testData);
+        });
+    }
+
+    function normalizeHeight(testData) {
+      // normalize height of testData between canvas height
+      let mean = testData.map((data) => data.normalized ? 0 : data.y).reduce((a, b) => a + b, 0);
+      mean = mean / testData.length;
+      for (let i = 0; i < testData.length; i++) {
+        if (testData[i].normalized) continue;
+        else {
+          testData[i].y = (testData[i].y - mean) + 1;
+          testData[i].normalized = true;
+        }
+      }
+    }
 
     function optimizeCanvas() {
       const { width, height } = canvas.getBoundingClientRect();
@@ -89,6 +118,7 @@
     }
 
     function renderGrid() {
+      console.log('rendering grid');
       for (let i = 0; i < canvas.width; i += 10) {
         for (let j = 0; j < canvas.height; j += 10) {
           const ctx = canvas.getContext('2d');
@@ -99,6 +129,7 @@
         }
       }
     }
+
     function drawCharacter(x, y, h) {
       // highlight every rectangle in grid
       const ctx = canvas.getContext('2d');
@@ -115,7 +146,7 @@
 
     function slopeNature(arr) {
       // get slope of array
-      return arr[arr.length - 1].y - arr[0].y;      
+      return arr[arr.length - 1].y - arr[0].y;
     }
 
     function renderChart(testData) {
@@ -124,11 +155,14 @@
       const ctx = canvas.getContext('2d');
       let text = '';
       let charPos = 0;
-      
+      // clear anything on canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // draw grid
+      renderGrid();
       let cycle = 0;
       for (let i = 0; i < testData.length; i++) {
         let { x, h, y } = testData[i];
-        if(!text) {
+        if (!text) {
           // get next 6 letters
           let nature = slopeNature(testData.slice(i, i + 6));
           if (nature >= 0) {
@@ -147,15 +181,16 @@
         ctx.fill();
         ctx.closePath();
         // draw text in rectangle
-        drawLetter(text[charPos%text.length], x * 60, (-y + 1000 + (- h * zoomFactor * scaleFactor)), h * zoomFactor * scaleFactor);
+        drawLetter(text[charPos % text.length], x * 60, (-y + 1000), h * zoomFactor * scaleFactor);
         // if rendering last character, reset cycle
         charPos++;
-        if( (text[i] == 'R' || text[i] == 'D') && charPos == text.length) {
+        if ((text[i] == 'R' || text[i] == 'D') && charPos == text.length) {
           text = '';
           charPos = 0;
         }
       }
     }
+
     function drawLetter(letter, x, y, h) {
       const canvas = document.getElementById('myChart');
       const ctx = canvas.getContext('2d');
@@ -350,7 +385,7 @@
       const letterWidth = grid[0].length * gridSize;
       let letterHeight = grid.length * gridSize;
       const startX = x
-      const startY = y - (letterHeight / 60);
+      
       if (h > letterHeight) {
         for (let i = letterHeight / zoomFactor; i < parseInt(h) / zoomFactor; i++) {
           if (letter == 'E' || letter == 'R' || letter == 'G' || letter == 'D' || letter == 'A') {
@@ -370,6 +405,8 @@
           }
         }
       }
+      const startY = y - h;
+      console.log(y, startY, h, letterHeight);
 
       for (let i = 0; i < grid.length; i++) {
         for (let j = 0; j < grid[i].length; j++) {
@@ -382,8 +419,6 @@
         }
       }
     }
-
-
 
   </script>
 </body>
