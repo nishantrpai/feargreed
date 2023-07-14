@@ -170,7 +170,7 @@
         if (!text) {
           // get next 6 letters
           let nature = slopeNature(testData.slice(i, i + 6));
-          if (nature <= 0) {
+          if (nature > 0) {
             text = 'GREED';
           } else {
             text = 'FEAR';
