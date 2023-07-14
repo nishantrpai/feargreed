@@ -9,7 +9,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.0.1/dist/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
   <script src="https://www.chartjs.org/chartjs-chart-financial/chartjs-chart-financial.js"></script>
-  <title>Vite App</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <title>Fear Greed</title>
   <style>
     body {
       background-color: #000;
@@ -18,12 +19,20 @@
 
     canvas {
       display: block;
+      background-color: #000;
     }
 
     #container {
       display: flex;
       flex-direction: column;
       align-items: center;
+    }
+    #screenshot {
+      margin-top: 20px;
+      border: none;
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 10px;
     }
   </style>
 </head>
@@ -33,6 +42,13 @@
     <h1>Real Time BTC/USD Price</h1>
     <h2>Price History</h2>
     <canvas id="myChart"></canvas>
+    <!-- button to screenshot -->
+    <div>
+      <button id="screenshot" aria-label="Screenshot" onclick="screenshot()">
+        <!-- camera svg -->
+        <i class="fa fa-camera" aria-hidden="true"></i>
+        Screenshot 
+      </button>
   </div>
   </div>
   <script>
@@ -67,7 +83,7 @@
         });
       setTimeout(() => {
         fetchTickerData();
-      }, 5000);
+      }, 30000);
     }
 
 
@@ -148,8 +164,7 @@
         if (!text) {
           // get next 6 letters
           let nature = slopeNature(testData.slice(i, i + 6));
-          console.log(i, text, 'nature', nature);
-          if (nature >= 0) {
+          if (nature <= 0) {
             text = 'GREED';
           } else {
             text = 'FEAR';
@@ -408,6 +423,15 @@
       }
     }
 
+    function screenshot() {
+    //  take screenshot of canvas
+    const canvas = document.getElementById('myChart');
+    const dataURL = canvas.toDataURL();
+    const link = document.createElement('a');
+    link.download = `feargreed-${new Date().toISOString()}.png`;
+    link.href = dataURL;
+    link.click();  
+    }
   </script>
 </body>
 
