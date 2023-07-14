@@ -27,6 +27,7 @@
       flex-direction: column;
       align-items: center;
     }
+
     #screenshot {
       margin-top: 20px;
       border: none;
@@ -47,9 +48,9 @@
       <button id="screenshot" aria-label="Screenshot" onclick="screenshot()">
         <!-- camera svg -->
         <i class="fa fa-camera" aria-hidden="true"></i>
-        Screenshot 
+        Screenshot
       </button>
-  </div>
+    </div>
   </div>
   <script>
     const canvas = document.getElementById('myChart');
@@ -132,12 +133,17 @@
 
     function renderGrid() {
       console.log('rendering grid');
+      // create a black background
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // draw grid
       for (let i = 0; i < canvas.width; i += 10) {
         for (let j = 0; j < canvas.height; j += 10) {
           const ctx = canvas.getContext('2d');
           ctx.beginPath();
           ctx.rect(i, j, 10, 10);
-          ctx.strokeStyle = '#333';
+          ctx.strokeStyle = '#222';
           ctx.stroke();
         }
       }
@@ -387,7 +393,7 @@
 
       console.log('letter', letter, 'letterHeight', letterHeight, 'h', h);
       // mod letter height so h%letterHeight == 0
-      
+
       if (letterHeight < h) {
         for (let i = letterHeight / zoomFactor; i < parseInt(h) / zoomFactor; i++) {
           if (letter == 'E' || letter == 'R' || letter == 'G' || letter == 'D' || letter == 'A') {
@@ -403,7 +409,7 @@
             }
           }
           else {
-            if(letterHeight < h) {
+            if (letterHeight < h) {
               grid.push(grid[grid.length - 1]);
               letterHeight = grid.length * gridSize;
             }
@@ -424,13 +430,13 @@
     }
 
     function screenshot() {
-    //  take screenshot of canvas
-    const canvas = document.getElementById('myChart');
-    const dataURL = canvas.toDataURL();
-    const link = document.createElement('a');
-    link.download = `feargreed-${new Date().toISOString()}.png`;
-    link.href = dataURL;
-    link.click();  
+      //  take screenshot of canvas
+      const canvas = document.getElementById('myChart');
+      const dataURL = canvas.toDataURL();
+      const link = document.createElement('a');
+      link.download = `feargreed-${new Date().toISOString()}.png`;
+      link.href = dataURL;
+      link.click();
     }
   </script>
 </body>
