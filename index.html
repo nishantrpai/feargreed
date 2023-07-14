@@ -48,6 +48,7 @@
     renderGrid();
 
     function fetchTickerData() {
+      testData = [];
       fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000')
         .then(response => response.json())
         .then(data => {
@@ -62,18 +63,17 @@
             testData.push(formatTickerData(candle, 0));
           }
           normalizeHeight(testData);
-          console.log(testData.length);
           renderChart(testData);
         });
       setTimeout(() => {
         fetchTickerData();
-      }, 1000);
+      }, 5000);
     }
 
 
     function formatTickerData(candle, offset) {
       let x = testData.length + offset;
-      let h = Math.abs((parseFloat(candle.c) - parseFloat(candle.o)) + 10);
+      let h = Math.ceil(Math.abs(parseFloat(candle.o) - parseFloat(candle.c)));
       let y = parseFloat(candle.h);
       return { x, h, y, normalized: false };
     }
@@ -83,15 +83,12 @@
       fetch('test.json')
         .then(response => response.json())
         .then(data => {
-          console.log(data);
           for (let i = 0; i < data.length; i++) {
             testData.push(formatTickerData(data[i]));
           }
           // get first 6 data points
-          testData = testData.slice(0, 6);
           normalizeHeight(testData);
-          console.log(testData);
-          // renderChart(testData);
+          renderChart(testData);
         });
     }
 
@@ -165,6 +162,7 @@
         if (!text) {
           // get next 6 letters
           let nature = slopeNature(testData.slice(i, i + 6));
+          console.log(i, text, 'nature', nature);
           if (nature >= 0) {
             text = 'GREED';
           } else {
@@ -181,6 +179,7 @@
         ctx.fill();
         ctx.closePath();
         // draw text in rectangle
+        console.log(text[charPos % text.length], x * 60, (-y + 1000), h * zoomFactor * scaleFactor);
         drawLetter(text[charPos % text.length], x * 60, (-y + 1000), h * zoomFactor * scaleFactor);
         // if rendering last character, reset cycle
         charPos++;
@@ -384,29 +383,34 @@
       const gridSize = 10;
       const letterWidth = grid[0].length * gridSize;
       let letterHeight = grid.length * gridSize;
-      const startX = x
+      const startX = x;
+      const startY = y - h;
+
+      console.log('letter', letter, 'letterHeight', letterHeight, 'h', h);
+      // mod letter height so h%letterHeight == 0
       
-      if (h > letterHeight) {
+      if (letterHeight < h) {
         for (let i = letterHeight / zoomFactor; i < parseInt(h) / zoomFactor; i++) {
           if (letter == 'E' || letter == 'R' || letter == 'G' || letter == 'D' || letter == 'A') {
             // add row before mid row before mid row
-            if (h > letterHeight) {
+            if (letterHeight < h) {
               grid.splice(Math.floor(grid.length / 2), 0, grid[1]);
               letterHeight = grid.length * gridSize;
             }
             // add before last row
-            if (h > letterHeight) {
+            if (letterHeight < h) {
               grid.splice(grid.length - 1, 0, grid[grid.length - 2]);
               letterHeight = grid.length * gridSize;
             }
           }
           else {
-            grid.push(grid[grid.length - 1]);
+            if(letterHeight < h) {
+              grid.push(grid[grid.length - 1]);
+              letterHeight = grid.length * gridSize;
+            }
           }
         }
       }
-      const startY = y - h;
-      console.log(y, startY, h, letterHeight);
 
       for (let i = 0; i < grid.length; i++) {
         for (let j = 0; j < grid[i].length; j++) {
