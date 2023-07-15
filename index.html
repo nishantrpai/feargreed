@@ -396,7 +396,7 @@
 
       if (letterHeight < h) {
         for (let i = letterHeight / zoomFactor; i < parseInt(h) / zoomFactor; i++) {
-          if (letter == 'E' || letter == 'R' || letter == 'G' || letter == 'D' || letter == 'A') {
+          // if (letter == 'E' || letter == 'R' || letter == 'G' || letter == 'D' || letter == 'A') {
             // add row before mid row before mid row
             if (letterHeight < h) {
               grid.splice(Math.floor(grid.length / 2), 0, grid[1]);
@@ -407,13 +407,13 @@
               grid.splice(grid.length - 1, 0, grid[grid.length - 2]);
               letterHeight = grid.length * gridSize;
             }
-          }
-          else {
-            if (letterHeight < h) {
-              grid.push(grid[grid.length - 1]);
-              letterHeight = grid.length * gridSize;
-            }
-          }
+          // }
+          // else {
+          //   if (letterHeight < h) {
+          //     grid.push(grid[grid.length - 1]);
+          //     letterHeight = grid.length * gridSize;
+          //   }
+          // }
         }
       }
 
