@@ -3,18 +3,19 @@
 
 <head>
   <meta charset="UTF-8">
-  <link rel="icon" href="/favicon.ico">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/luxon@1.26.0"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.0.1/dist/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
   <script src="https://www.chartjs.org/chartjs-chart-financial/chartjs-chart-financial.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link href="https://fonts.cdnfonts.com/css/sf-mono" rel="stylesheet">
   <title>Fear Greed</title>
   <style>
     body {
       background-color: #000;
       color: #fff;
+      font-family: 'SF Mono', sans-serif;
     }
 
     canvas {
@@ -170,7 +171,7 @@
         if (!text) {
           // get next 6 letters
           let nature = slopeNature(testData.slice(i, i + 6));
-          if (nature > 0) {
+          if (nature > -1) {
             text = 'GREED';
           } else {
             text = 'FEAR';
@@ -184,7 +185,6 @@
         ctx.stroke();
         ctx.closePath();
         // draw text in rectangle
-        console.log(text[charPos % text.length], x * 60, (-y + 1000), h * zoomFactor * scaleFactor);
         drawLetter(text[charPos % text.length], x * 60, (-y + 1000), h * zoomFactor * scaleFactor);
         // if rendering last character, reset cycle
         charPos++;
