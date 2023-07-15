@@ -59,11 +59,11 @@
     // FEAR
     // GREED
     let testData = []
-
+    let maxPrice = 0;
     fetchTickerData();
     // mockTickerData();
     optimizeCanvas();
-    renderGrid();
+    // renderGrid();
 
     function fetchTickerData() {
       testData = [];
@@ -113,6 +113,9 @@
     function normalizeHeight(testData) {
       // normalize height of testData between canvas height
       let mean = testData.map((data) => data.normalized ? 0 : data.y).reduce((a, b) => a + b, 0);
+      maxPrice = Math.ceil(Math.max(...testData.map((data) => data.y)));
+      // round maxprice to nearest 10
+      maxPrice = Math.ceil(maxPrice / 10) * 10;
       mean = mean / testData.length;
       for (let i = 0; i < testData.length; i++) {
         if (testData[i].normalized) continue;
@@ -132,7 +135,7 @@
       canvas.style.height = `${height * scaleFactor}px`;
     }
 
-    function renderGrid() {
+    function renderGrid(max = 0, min = 0) {
       console.log('rendering grid');
       // create a black background
       const ctx = canvas.getContext('2d');
@@ -148,6 +151,12 @@
           ctx.stroke();
         }
       }
+      // add text to grid (max, min)
+      ctx.font = '20px Arial';
+      ctx.fillStyle = '#fff';
+      // format max as price 
+      ctx.fillText(`$${max}`, 0, 30);
+      ctx.fillText(min, 0, canvas.height - 10);
     }
 
     function slopeNature(arr) {
@@ -164,7 +173,10 @@
       // clear anything on canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       // draw grid
-      renderGrid();
+      // get max and min
+      let max = 0;
+      max = Math.ceil(testData.map((data) => data.y).reduce((a, b) => Math.max(a, b)));
+      renderGrid(maxPrice, 0);
       let cycle = 0;
       for (let i = 0; i < testData.length; i++) {
         let { x, h, y } = testData[i];
