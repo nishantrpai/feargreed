@@ -59,33 +59,69 @@
     // FEAR
     // GREED
     let testData = []
+    let rawCandles = [];
     let maxPrice = 0;
+    let ws = null;
     fetchTickerData();
     // mockTickerData();
     optimizeCanvas();
     // renderGrid();
 
     function fetchTickerData() {
+      rawCandles = [];
       testData = [];
       fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000')
         .then(response => response.json())
         .then(data => {
           for (let i = 0; i < data.length; i++) {
-            let candle = {
+            rawCandles.push({
               o: data[i][1],
               c: data[i][4],
               h: data[i][2],
               l: data[i][3],
               t: data[i][0]
-            }
-            testData.push(formatTickerData(candle, 0));
+            });
           }
-          normalizeHeight(testData);
-          renderChart(testData);
+          rebuildAndRender();
+          connectWebSocket();
         });
-      setTimeout(() => {
-        fetchTickerData();
-      }, 30000);
+    }
+
+    function connectWebSocket() {
+      if (ws) {
+        ws.close();
+      }
+      ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_1m');
+
+      ws.onmessage = function (event) {
+        const msg = JSON.parse(event.data);
+        const k = msg.k;
+        const candle = { o: k.o, c: k.c, h: k.h, l: k.l, t: k.t };
+        if (rawCandles.length > 0 && rawCandles[rawCandles.length - 1].t === candle.t) {
+          rawCandles[rawCandles.length - 1] = candle;
+        } else {
+          rawCandles.push(candle);
+        }
+        rebuildAndRender();
+      };
+
+      ws.onerror = function (err) {
+        console.error('WebSocket error:', err);
+      };
+
+      ws.onclose = function () {
+        console.log('WebSocket closed, reconnecting in 3s...');
+        setTimeout(connectWebSocket, 3000);
+      };
+    }
+
+    function rebuildAndRender() {
+      testData = [];
+      for (let i = 0; i < rawCandles.length; i++) {
+        testData.push(formatTickerData(rawCandles[i], 0));
+      }
+      normalizeHeight(testData);
+      renderChart(testData);
     }
 
 
