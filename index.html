@@ -56,12 +56,15 @@
   <script>
     const canvas = document.getElementById('myChart');
     const zoomFactor = 2;
+    const BINANCE_WS_URL = 'wss://stream.binance.com:9443/ws/btcusdt@kline_1m';
+    const BINANCE_REST_URL = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000';
     // FEAR
     // GREED
     let testData = []
     let rawCandles = [];
     let maxPrice = 0;
     let ws = null;
+    let renderPending = false;
     fetchTickerData();
     // mockTickerData();
     optimizeCanvas();
@@ -70,7 +73,7 @@
     function fetchTickerData() {
       rawCandles = [];
       testData = [];
-      fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=1000')
+      fetch(BINANCE_REST_URL)
         .then(response => response.json())
         .then(data => {
           for (let i = 0; i < data.length; i++) {
@@ -91,18 +94,24 @@
       if (ws) {
         ws.close();
       }
-      ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@kline_1m');
+      ws = new WebSocket(BINANCE_WS_URL);
 
       ws.onmessage = function (event) {
         const msg = JSON.parse(event.data);
         const k = msg.k;
-        const candle = { o: k.o, c: k.c, h: k.h, l: k.l, t: k.t };
+        const candle = { o: k.o, c: k.c, h: k.h, l: k.l, t: Number(k.t) };
         if (rawCandles.length > 0 && rawCandles[rawCandles.length - 1].t === candle.t) {
           rawCandles[rawCandles.length - 1] = candle;
         } else {
           rawCandles.push(candle);
         }
-        rebuildAndRender();
+        if (!renderPending) {
+          renderPending = true;
+          requestAnimationFrame(() => {
+            rebuildAndRender();
+            renderPending = false;
+          });
+        }
       };
 
       ws.onerror = function (err) {
